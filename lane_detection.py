@@ -2,6 +2,18 @@ import numpy as np
 import cv2
 #video = several frames(images shown aftereach other)
 video=cv2.VideoCapture('lane_detection_video.mp4')
+def draw_the_lines(image,lines):
+    #create a distinct image for the line
+    lines_image=np.zeros((image.shape[0],image.shape[1],3),dtype=np.uint8)
+    #there are a (x,y) for the strting and end points of the lines
+    for line in lines:
+        for x1,y1,x2,y2 in line:
+            cv2.line(lines_image,(x1,y1),(x2,y2),(255,0,0),thickness=3)
+    #finally we mege the image with the lines
+    image_with_lines=cv2.addWeighted(image,0.8,lines_image,1,0.8)
+    return image_with_lines
+
+
 def region_of_intrest(image,region_points):
     # we are going to replace pixels with 0(black)-the regions we are not intrested
     mask=np.zeros_like(image)
@@ -26,7 +38,11 @@ def get_detected_lanes(image):
     ]
     #we can get rid of unrelevent parts of image we just keep the lower triangle region
     cropped_image=region_of_intrest(canny_img,np.array([region_of_itrests_vertices],np.int32))
-    return cropped_image
+    #use the line detection algorithm Hough transorm
+    lines=cv2.HoughLinesP(cropped_image,rho=2,theta=np.pi/180,threshold=50,lines=np.array([]),minLineLength=40,maxLineGap=150)
+    #drew the lines on the image
+    image_with_lines=draw_the_lines(image,lines)
+    return image_with_lines
 while video.isOpened():
     #is_grapped will returns a boolean value wether the frame was returned successfully or not
     is_grabbed,frame=video.read()
